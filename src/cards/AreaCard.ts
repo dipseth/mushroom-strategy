@@ -33,8 +33,6 @@ class AreaCard extends AbstractCard {
 
     const configuration = AreaCard.getDefaultConfig();
 
-    let customConfig = customConfiguration;
-
     configuration.primary = area.name;
     configuration.icon = area.icon ?? configuration.icon;
 
@@ -46,12 +44,8 @@ class AreaCard extends AbstractCard {
       configuration.tap_action.navigation_path = area.area_id;
     }
 
-    // Don't override the card type if set differently in the strategy options.
-    if (customConfig) {
-      customConfig = { ...customConfig, type: configuration.type };
-    }
-
-    this.configuration = { ...this.configuration, ...configuration, ...customConfig };
+    // Honor user-supplied card type (e.g. `custom:minimalistic-area-card`) when present.
+    this.configuration = { ...this.configuration, ...configuration, ...customConfiguration };
   }
 }
 

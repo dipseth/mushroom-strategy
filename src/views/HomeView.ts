@@ -268,8 +268,9 @@ class HomeView extends AbstractView {
         // Fallback to the default strategy card.
         AreaCard = (await import('../cards/AreaCard')).default;
 
-        if (Registry.strategyOptions.debug && moduleName !== 'default') {
-          logMessage(lvlError, `Error importing ${moduleName}: card!`, e);
+        if (moduleName !== 'default') {
+          // eslint-disable-next-line no-console
+          console.error(`[mushroom-strategy] Error importing area card module "${moduleName}":`, e);
         }
       }
 
