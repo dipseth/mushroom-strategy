@@ -1,4 +1,6 @@
 import { HassServiceTarget } from 'home-assistant-js-websocket';
+// Side-effect import: registers the `mushroom-strategy-area-card` custom element.
+import './third-party/minimalistic-area-card/minimalistic-area-card';
 import HeaderCard from './cards/HeaderCard';
 import SensorCard from './cards/SensorCard';
 import { Registry } from './Registry';

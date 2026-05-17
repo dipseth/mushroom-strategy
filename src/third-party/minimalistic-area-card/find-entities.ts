@@ -1,0 +1,92 @@
+/**
+ * Adapted from minimalistic-area-card by Marcos Almeida (junalmeida).
+ * Source: https://github.com/junalmeida/homeassistant-minimalistic-area-card
+ * License: MIT (see LICENSE-minimalistic-area-card in this directory).
+ */
+import { computeDomain, HomeAssistant } from "custom-card-helpers";
+import { HassEntity } from "home-assistant-js-websocket";
+import { HomeAssistantArea } from "./types";
+
+const arrayFilter = (
+    array: any[],
+    conditions: Array<(value: any) => boolean>,
+    maxSize: number
+) => {
+    if (!maxSize || maxSize > array.length) {
+        maxSize = array.length;
+    }
+
+    const filteredArray: any[] = [];
+
+    for (let i = 0; i < array.length && filteredArray.length < maxSize; i++) {
+        let meetsConditions = true;
+
+        for (const condition of conditions) {
+            if (!condition(array[i])) {
+                meetsConditions = false;
+                break;
+            }
+        }
+
+        if (meetsConditions) {
+            filteredArray.push(array[i]);
+        }
+    }
+
+    return filteredArray;
+};
+
+export const findEntities = (
+    hass: HomeAssistant,
+    maxEntities: number,
+    entities: string[],
+    entitiesFallback: string[],
+    includeDomains?: string[],
+    entityFilter?: (stateObj: HassEntity) => boolean
+): string[] => {
+    const conditions: Array<(value: string) => boolean> = [];
+
+    if (includeDomains?.length) {
+        conditions.push((eid) => includeDomains.includes(computeDomain(eid)));
+    }
+
+    if (entityFilter) {
+        conditions.push(
+            (eid) => hass.states[eid] && entityFilter(hass.states[eid])
+        );
+    }
+
+    const entityIds = arrayFilter(entities, conditions, maxEntities);
+
+    if (entityIds.length < maxEntities && entitiesFallback.length) {
+        const fallbackEntityIds = findEntities(
+            hass,
+            maxEntities - entityIds.length,
+            entitiesFallback,
+            [],
+            includeDomains,
+            entityFilter
+        );
+
+        entityIds.push(...fallbackEntityIds);
+    }
+
+    return entityIds;
+};
+
+export async function subscribeAreas(hass: HomeAssistant): Promise<HomeAssistantArea[] | undefined> {
+    if (!hass || !hass.connection || !hass.connected) {
+        return undefined;
+    }
+    else {
+        const result = (await hass.connection.sendMessagePromise({
+            type: 'config/area_registry/list'
+        })) as HomeAssistantArea[];
+
+        if (!result)
+            return undefined;
+        else
+            return result;
+
+    }
+}

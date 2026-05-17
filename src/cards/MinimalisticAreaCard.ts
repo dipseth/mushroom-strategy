@@ -8,15 +8,18 @@ import { StrategyArea } from '../types/strategy/strategy-generics';
 /**
  * Minimalistic Area Card Class
  *
- * Renders an area entry using the third-party `custom:minimalistic-area-card`.
- * Used when the strategy's `areas` option declares `type: MinimalisticAreaCard`.
- * User-supplied fields (entity, entities, camera_image, card_mod, etc.) pass through.
+ * Renders an area entry using the bundled `custom:mushroom-strategy-area-card`
+ * (a fork of junalmeida/homeassistant-minimalistic-area-card, registered as a
+ * different element name so it doesn't clash with a HACS install of the
+ * original). Used when the strategy's `areas` option declares
+ * `type: MinimalisticAreaCard`. User-supplied fields (entity, entities,
+ * camera_image, card_mod, etc.) pass through.
  */
 class MinimalisticAreaCard extends AbstractCard {
   /** Returns the default configuration object for the card. */
   static getDefaultConfig(): LovelaceCardConfig {
     return {
-      type: 'custom:minimalistic-area-card',
+      type: 'custom:mushroom-strategy-area-card',
       tap_action: { action: 'navigate', navigation_path: '' },
     };
   }
