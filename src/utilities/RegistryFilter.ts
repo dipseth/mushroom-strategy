@@ -101,7 +101,7 @@ class RegistryFilter<T extends RegistryEntry, K extends keyof T = keyof T> {
       let deviceAreaId: string | null | undefined;
 
       if (expandToDevice && entryObject.device_id) {
-        deviceAreaId = Registry.devices.find((device) => device.id === entryObject.device_id)?.area_id;
+        deviceAreaId = Registry.devicesById.get(entryObject.device_id)?.area_id;
       }
 
       // 1. No areaId provided.

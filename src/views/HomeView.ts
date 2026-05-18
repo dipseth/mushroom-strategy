@@ -256,23 +256,34 @@ class HomeView extends AbstractView {
     const titleCard = titleHidden ? undefined : new HeaderCard({}, { title: localize('generic.areas') }).createCard();
     const cardConfigurations: (TemplateCardConfig | AreaCardConfig)[] = [];
 
-    for (const area of Registry.areas) {
-      const moduleName =
-        Registry.strategyOptions.areas[area.area_id]?.type ?? Registry.strategyOptions.areas['_']?.type ?? 'default';
-
-      let AreaCard;
-
-      try {
-        AreaCard = ((await import(`../cards/${moduleName}`)) as { default: CardConstructor }).default;
-      } catch (e) {
-        // Fallback to the default strategy card.
-        AreaCard = (await import('../cards/AreaCard')).default;
-
-        if (moduleName !== 'default') {
-          // eslint-disable-next-line no-console
-          console.error(`[mushroom-strategy] Error importing area card module "${moduleName}":`, e);
+    // Resolve unique area-card module names once and in parallel rather than awaiting
+    // sequentially per area (most users have the same `type` set on areas._ so this collapses
+    // ~15 sequential awaits into 1 parallel batch).
+    const fallbackPromise = import('../cards/AreaCard').then((m) => m.default as unknown as CardConstructor);
+    const moduleNamesPerArea = Registry.areas.map(
+      (area) =>
+        Registry.strategyOptions.areas[area.area_id]?.type ?? Registry.strategyOptions.areas['_']?.type ?? 'default'
+    );
+    const uniqueModuleNames = Array.from(new Set(moduleNamesPerArea));
+    const resolvedAreaCards = new Map<string, CardConstructor>();
+    await Promise.all(
+      uniqueModuleNames.map(async (moduleName) => {
+        try {
+          const mod = (await import(`../cards/${moduleName}`)) as { default: CardConstructor };
+          resolvedAreaCards.set(moduleName, mod.default);
+        } catch (e) {
+          resolvedAreaCards.set(moduleName, await fallbackPromise);
+          if (moduleName !== 'default') {
+            // eslint-disable-next-line no-console
+            console.error(`[mushroom-strategy] Error importing area card module "${moduleName}":`, e);
+          }
         }
-      }
+      })
+    );
+
+    for (let i = 0; i < Registry.areas.length; i++) {
+      const area = Registry.areas[i];
+      const AreaCard = resolvedAreaCards.get(moduleNamesPerArea[i])!;
 
       cardConfigurations.push(
         new AreaCard(area, {

@@ -27,6 +27,9 @@ class Registry {
   /** Entries of Home Assistant's device registry. */
   private static _devices: DeviceRegistryEntry[];
 
+  /** Devices indexed by id for O(1) lookup. Rebuilt whenever {@link _devices} is set. */
+  private static _devicesById: Map<string, DeviceRegistryEntry> = new Map();
+
   /**
    * Home Assistant's Device registry.
    *
@@ -35,6 +38,16 @@ class Registry {
    */
   static get devices(): DeviceRegistryEntry[] {
     return Registry._devices;
+  }
+
+  /**
+   * Device lookup map keyed by device id.
+   *
+   * Build once during initialization, used by hot-path filters (e.g. {@link RegistryFilter.whereAreaId})
+   * instead of `Array.prototype.find` which is O(N) per entity.
+   */
+  static get devicesById(): Map<string, DeviceRegistryEntry> {
+    return Registry._devicesById;
   }
 
   /** Entries of Home Assistant's state registry */
@@ -156,6 +169,9 @@ class Registry {
       .orderBy(['name_by_user', 'name'], 'asc')
       .toList()
       .map((device) => ({ ...device, area_id: device.area_id ?? 'undisclosed' }));
+
+    // Build O(1) device lookup for the hot path (whereAreaId).
+    Registry._devicesById = new Map(Registry._devices.map((device) => [device.id, device]));
 
     // Process entries of the HASS area registry.
     Registry._areas.push({
